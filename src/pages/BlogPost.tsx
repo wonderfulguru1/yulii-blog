@@ -2,9 +2,12 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Calendar, User, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useLogo } from "../contexts/LogoContext";
+import ImageLogo from "../components/ImageLogo";
 
 const BlogPost = () => {
   const { id } = useParams();
+  const { text } = useLogo();
 
   // Mock data - in real app, fetch based on ID
   const post = {
@@ -77,10 +80,8 @@ const BlogPost = () => {
       <nav className="sticky top-0 z-50 bg-card border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold">
-              M
-            </div>
-            <span className="font-bold text-xl">Moniepoint <span className="text-primary">BLOG</span></span>
+            <ImageLogo size="sm" showText={false} />
+            <span className="font-bold text-xl">{text} <span className="text-primary">BLOG</span></span>
           </Link>
           <Link to="/blog">
             <Button variant="outline" size="sm">

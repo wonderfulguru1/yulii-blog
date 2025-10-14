@@ -1,85 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useCollection } from "../hooks/useFirestore";
+import { orderBy, where, query } from "firebase/firestore";
+import { useLogo } from "../contexts/LogoContext";
+import ImageLogo from "../components/ImageLogo";
 
-const featuredPosts = [
-  {
-    id: 1,
-    title: "How to Spot Bank Fraud and Protect Your Money",
-    category: "Product Updates",
-    date: "September 17, 2025",
-    author: "John Doe",
-    image: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800&h=600&fit=crop",
-  },
-  {
-    id: 2,
-    title: "Needs vs Wants: The Smart Way to Manage Money",
-    category: "Business Life",
-    date: "September 26, 2025",
-    author: "Jane Smith",
-    image: "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800&h=600&fit=crop",
-  },
-];
-
-const blogPosts = [
-  {
-    id: 1,
-    title: "Needs vs Wants: The Smart Way to Manage Money and Save",
-    category: "Business Life",
-    date: "September 26, 2025",
-    author: "Jane Smith",
-    excerpt: "Learn the difference between needs and wants to make smarter financial decisions.",
-    image: "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=400&h=300&fit=crop",
-  },
-  {
-    id: 2,
-    title: "Top Fintech Companies Leading Innovation",
-    category: "News",
-    date: "September 24, 2025",
-    author: "Mike Johnson",
-    excerpt: "Discover the companies revolutionizing financial technology this year.",
-    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop",
-  },
-  {
-    id: 3,
-    title: "How to Save Smarter and Earn Up to 18% Interest",
-    category: "Business Tips",
-    date: "September 22, 2025",
-    author: "Sarah Williams",
-    excerpt: "Maximize your savings with these proven strategies and high-yield accounts.",
-    image: "https://images.unsplash.com/photo-1579621970588-a35d0e7ab9b6?w=400&h=300&fit=crop",
-  },
-  {
-    id: 4,
-    title: "Digital Payment Trends Reshaping Commerce",
-    category: "Tech & Processes",
-    date: "September 20, 2025",
-    author: "David Brown",
-    excerpt: "Explore how digital payments are transforming the way we do business.",
-    image: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&h=300&fit=crop",
-  },
-  {
-    id: 5,
-    title: "Essential Tips for Small Business Financial Success",
-    category: "Business Tips",
-    date: "September 18, 2025",
-    author: "Emily Davis",
-    excerpt: "Build a solid financial foundation for your small business with expert advice.",
-    image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=300&fit=crop",
-  },
-  {
-    id: 6,
-    title: "The Future of Banking: What to Expect",
-    category: "Impact Stories",
-    date: "September 15, 2025",
-    author: "Chris Wilson",
-    excerpt: "A look at emerging technologies shaping the future of financial services.",
-    image: "https://images.unsplash.com/photo-1501167786227-4cba60f6d58f?w=400&h=300&fit=crop",
-  },
-];
+// Interface for blog post
+interface BlogPost {
+  id: string;
+  title: string;
+  category: string;
+  date: string;
+  author: string;
+  excerpt: string;
+  content: string;
+  image: string;
+  status: string;
+  createdAt: any;
+  updatedAt: any;
+}
 
 const categories = ["All", "Business Tips", "News", "Product Updates", "Business Life", "Tech & Processes", "Impact Stories"];
 
@@ -87,6 +30,19 @@ const Blog = () => {
   const [currentFeatured, setCurrentFeatured] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const { text } = useLogo();
+
+  // Get all published blog posts from Firestore
+  const { data: allPosts, loading, error } = useCollection('posts', [
+    where('status', '==', 'Published'),
+    orderBy('createdAt', 'desc')
+  ]);
+
+  // Filter posts for featured (first 2 published posts)
+  const featuredPosts = allPosts?.slice(0, 2) || [];
+  
+  // All blog posts (published only)
+  const blogPosts = allPosts || [];
 
   const nextFeatured = () => {
     setCurrentFeatured((prev) => (prev + 1) % featuredPosts.length);
@@ -96,12 +52,47 @@ const Blog = () => {
     setCurrentFeatured((prev) => (prev - 1 + featuredPosts.length) % featuredPosts.length);
   };
 
-  const filteredPosts = blogPosts.filter((post) => {
+  const filteredPosts = blogPosts.filter((post: BlogPost) => {
     const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          post.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === "All" || post.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  // Format date for display
+  const formatDate = (date: any) => {
+    if (!date) return '';
+    const dateObj = date.toDate ? date.toDate() : new Date(date);
+    return dateObj.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading blog posts...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">Error loading blog posts: {error}</p>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -109,19 +100,11 @@ const Blog = () => {
       <nav className="sticky top-0 z-50 bg-card border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold">
-              M
-            </div>
-            <span className="font-bold text-xl">Moniepoint <span className="text-primary">BLOG</span></span>
+            <ImageLogo size="sm" showText={false} />
+            <span className="font-bold text-xl">{text} <span className="text-primary">BLOG</span></span>
           </Link>
           <div className="hidden md:flex items-center gap-6">
-            <Link to="/" className="text-sm font-medium hover:text-primary transition-colors">Home</Link>
-            <Link to="/blog" className="text-sm font-medium text-primary">Business Tips</Link>
-            <Link to="/blog" className="text-sm font-medium hover:text-primary transition-colors">Education Series</Link>
-            <Link to="/blog" className="text-sm font-medium hover:text-primary transition-colors">Impact Stories</Link>
-            <Link to="/blog" className="text-sm font-medium hover:text-primary transition-colors">News</Link>
-            <Link to="/blog" className="text-sm font-medium hover:text-primary transition-colors">People</Link>
-            <Link to="/blog" className="text-sm font-medium hover:text-primary transition-colors">Product Updates</Link>
+          
             <Button variant="default" size="sm" className="rounded-full">
               Subscribe
             </Button>
@@ -133,7 +116,7 @@ const Blog = () => {
       <section className="py-16 px-4">
         <div className="container mx-auto text-center max-w-4xl">
           <h1 className="text-5xl md:text-6xl font-bold text-primary mb-4">
-            Moniepoint Blog
+            {text} Blog
           </h1>
           <p className="text-lg text-muted-foreground">
             Get behind the scenes on our process, exciting news, and the people making dreams come true for millions of businesses.
@@ -142,64 +125,66 @@ const Blog = () => {
       </section>
 
       {/* Featured Story */}
-      <section className="px-4 pb-16">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid md:grid-cols-2 gap-6 bg-primary rounded-3xl overflow-hidden shadow-lg">
-            <div className="p-8 md:p-12 flex flex-col justify-center text-primary-foreground">
-              <div className="flex items-center gap-4 mb-6">
-                <span className="text-sm font-medium">Product Updates</span>
-                <Badge variant="secondary" className="bg-primary-foreground text-primary">
-                  Top Stories
-                </Badge>
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                {featuredPosts[currentFeatured].title}
-              </h2>
-              <div className="text-sm mb-6 opacity-90">
-                {featuredPosts[currentFeatured].date} • by {featuredPosts[currentFeatured].author}
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex gap-2">
-                  {featuredPosts.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentFeatured(index)}
-                      className={`w-2 h-2 rounded-full transition-all ${
-                        index === currentFeatured ? "bg-primary-foreground w-6" : "bg-primary-foreground/40"
-                      }`}
-                    />
-                  ))}
+      {featuredPosts.length > 0 && (
+        <section className="px-4 pb-16">
+          <div className="container mx-auto max-w-6xl">
+            <div className="grid md:grid-cols-2 gap-6 bg-primary rounded-3xl overflow-hidden shadow-lg">
+              <div className="p-8 md:p-12 flex flex-col justify-center text-primary-foreground">
+                <div className="flex items-center gap-4 mb-6">
+                  <span className="text-sm font-medium">{featuredPosts[currentFeatured]?.category}</span>
+                  <Badge variant="secondary" className="bg-primary-foreground text-primary">
+                    Top Stories
+                  </Badge>
                 </div>
-                <div className="ml-auto flex gap-2">
-                  <Button
-                    size="icon"
-                    variant="secondary"
-                    className="rounded-full bg-primary-foreground hover:bg-primary-foreground/90 text-primary"
-                    onClick={prevFeatured}
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="secondary"
-                    className="rounded-full bg-primary-foreground hover:bg-primary-foreground/90 text-primary"
-                    onClick={nextFeatured}
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </Button>
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                  {featuredPosts[currentFeatured]?.title}
+                </h2>
+                <div className="text-sm mb-6 opacity-90">
+                  {formatDate(featuredPosts[currentFeatured]?.createdAt)} • by {featuredPosts[currentFeatured]?.author}
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex gap-2">
+                    {featuredPosts.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentFeatured(index)}
+                        className={`w-2 h-2 rounded-full transition-all ${
+                          index === currentFeatured ? "bg-primary-foreground w-6" : "bg-primary-foreground/40"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <div className="ml-auto flex gap-2">
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="rounded-full bg-primary-foreground hover:bg-primary-foreground/90 text-primary"
+                      onClick={prevFeatured}
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="rounded-full bg-primary-foreground hover:bg-primary-foreground/90 text-primary"
+                      onClick={nextFeatured}
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="relative h-[400px] md:h-auto bg-accent">
-              <img
-                src={featuredPosts[currentFeatured].image}
-                alt={featuredPosts[currentFeatured].title}
-                className="w-full h-full object-cover"
-              />
+              <div className="relative h-[400px] md:h-auto bg-accent">
+                <img
+                  src={featuredPosts[currentFeatured]?.image}
+                  alt={featuredPosts[currentFeatured]?.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* All Stories */}
       <section className="px-4 pb-16">
@@ -239,34 +224,46 @@ const Blog = () => {
           </div>
 
           {/* Blog Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredPosts.map((post) => (
-              <Link
-                key={post.id}
-                to={`/blog/${post.id}`}
-                className="group bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-border"
-              >
-                <div className="aspect-video overflow-hidden">
-                  <img
-                    src={post.image}
-                    alt={post.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-6">
-                  <Badge variant="secondary" className="mb-3">
-                    {post.category}
-                  </Badge>
-                  <p className="text-xs text-muted-foreground mb-2">{post.date}</p>
-                  <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
-                    {post.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4">{post.excerpt}</p>
-                  <p className="text-xs text-muted-foreground">by {post.author}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
+          {filteredPosts.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredPosts.map((post: BlogPost) => (
+                <Link
+                  key={post.id}
+                  to={`/blog/${post.id}`}
+                  className="group bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-border"
+                >
+                  <div className="aspect-video overflow-hidden">
+                    <img
+                      src={post.image || 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&h=300&fit=crop'}
+                      alt={post.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <Badge variant="secondary" className="mb-3">
+                      {post.category}
+                    </Badge>
+                    <p className="text-xs text-muted-foreground mb-2">{formatDate(post.createdAt)}</p>
+                    <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
+                      {post.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">{post.excerpt}</p>
+                    <p className="text-xs text-muted-foreground">by {post.author}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground text-lg mb-4">No blog posts found</p>
+              <p className="text-sm text-muted-foreground">
+                {searchQuery || selectedCategory !== "All" 
+                  ? "Try adjusting your search or filter criteria" 
+                  : "Check back later for new content"
+                }
+              </p>
+            </div>
+          )}
         </div>
       </section>
     </div>
