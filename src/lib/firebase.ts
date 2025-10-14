@@ -5,13 +5,13 @@ import { getStorage } from 'firebase/storage';
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "",
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || ""
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCzRyP-rBzUbEX2C_kwu5rPYXbz8xfwA98",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "intouch-dev-269817-de0b4.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "intouch-dev-269817-de0b4",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "intouch-dev-269817-de0b4.appspot.com",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "907465139153",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:907465139153:web:7e6e252986acc260d176f0",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-CLYRMPJ5VB"
 };
 
 // Debug: Log configuration to check if environment variables are loaded
