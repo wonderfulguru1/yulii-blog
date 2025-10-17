@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Pencil, Trash2, Eye, LogOut, User, Settings } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, LogOut, User, Settings, Tags } from "lucide-react";
 import { useAuthContext } from "../contexts/AuthContext";
 import { useFirestore } from "../hooks/useFirestore";
 import { useCollection } from "../hooks/useFirestore";
@@ -26,6 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import RichTextEditor from "../components/RichTextEditor";
 import {
   Select,
   SelectContent,
@@ -39,7 +40,7 @@ import ImageUpload from "../components/ImageUpload";
 import ImageLogo from "../components/ImageLogo";
 import { useLogo } from "../contexts/LogoContext";
 
-const categories = ["Business Tips", "News", "Product Updates", "Business Life", "Tech & Processes", "Impact Stories"];
+// Categories are now loaded from Firestore `categories` collection
 
 // Interface for blog post
 interface BlogPost {
@@ -61,6 +62,7 @@ const Admin = () => {
   const navigate = useNavigate();
   const { addDocument, updateDocument, deleteDocument } = useFirestore();
   const { data: posts, loading, error } = useCollection('posts', [orderBy('createdAt', 'desc')]);
+  const { data: categoryDocs } = useCollection('categories', [orderBy('name', 'asc')]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const { toast } = useToast();
@@ -208,6 +210,12 @@ const Admin = () => {
                 View Blog
               </Button>
             </Link>
+            <Link to="/admin/categories">
+              <Button variant="outline" size="sm">
+                <Tags className="h-4 w-4 mr-2" />
+                Categories
+              </Button>
+            </Link>
             <Link to="/logo-manager">
               <Button variant="outline" size="sm">
                 <Settings className="h-4 w-4 mr-2" />
@@ -263,9 +271,9 @@ const Admin = () => {
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
+                      {(categoryDocs || []).map((cat: any) => (
+                        <SelectItem key={cat.id} value={cat.name}>
+                          {cat.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -289,14 +297,12 @@ const Admin = () => {
                 />
 
                 <div className="space-y-2">
-                  <Label htmlFor="content">Content</Label>
-                  <Textarea
-                    id="content"
+                  <Label htmlFor="content">Content (Rich Text)</Label>
+                  <RichTextEditor
                     value={formData.content}
-                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                    onChange={(html) => setFormData({ ...formData, content: html })}
                     placeholder="Write your blog post content here..."
-                    rows={10}
-                    required
+                    minHeight={360}
                   />
                 </div>
 
@@ -371,7 +377,7 @@ const Admin = () => {
           </Card>
           <Card className="p-6">
             <div className="text-sm text-muted-foreground mb-1">Categories</div>
-            <div className="text-3xl font-bold">{categories.length}</div>
+            <div className="text-3xl font-bold">{categoryDocs?.length || 0}</div>
           </Card>
         </div>
 
