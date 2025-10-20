@@ -47,6 +47,11 @@ const RichTextEditor = ({ value, onChange, placeholder = "Write your content..."
         <Button type="button" variant="outline" size="sm" onClick={() => exec("formatBlock", "<h3>")}>H3</Button>
         <Button type="button" variant="outline" size="sm" onClick={() => exec("insertUnorderedList")}>• List</Button>
         <Button type="button" variant="outline" size="sm" onClick={() => exec("insertOrderedList")}>1. List</Button>
+        <div className="mx-2 w-px self-stretch bg-border" />
+        <Button type="button" variant="outline" size="sm" onClick={() => exec("justifyLeft")}>Left</Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => exec("justifyCenter")}>Center</Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => exec("justifyRight")}>Right</Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => exec("justifyFull")}>Justify</Button>
         <Button
           type="button"
           variant="outline"
