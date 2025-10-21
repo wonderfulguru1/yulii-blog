@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { Youtube, ExternalLink } from "lucide-react";
 
 interface RichTextEditorProps {
   value: string;
@@ -21,6 +22,65 @@ const RichTextEditor = ({ value, onChange, placeholder = "Write your content..."
     document.execCommand(command, false, value);
     if (editorRef.current) {
       onChange(editorRef.current.innerHTML);
+    }
+  };
+
+  const insertYouTubeVideo = () => {
+    const videoUrl = window.prompt("Enter YouTube video URL (e.g., https://youtube.com/watch?v=VIDEO_ID or https://youtu.be/VIDEO_ID)");
+    if (videoUrl) {
+      // Extract video ID from various YouTube URL formats
+      let videoId = '';
+      
+      // Handle different YouTube URL formats
+      if (videoUrl.includes('youtube.com/watch?v=')) {
+        videoId = videoUrl.split('v=')[1].split('&')[0];
+      } else if (videoUrl.includes('youtu.be/')) {
+        videoId = videoUrl.split('youtu.be/')[1].split('?')[0];
+      } else if (videoUrl.includes('youtube.com/embed/')) {
+        videoId = videoUrl.split('embed/')[1].split('?')[0];
+      } else {
+        // If it's just a video ID, use it directly
+        videoId = videoUrl.replace(/[^a-zA-Z0-9_-]/g, '');
+      }
+      
+      if (videoId) {
+        // Create responsive YouTube embed
+        const youtubeEmbed = `
+          <div style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%; margin: 16px 0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+            <iframe 
+              src="https://www.youtube.com/embed/${videoId}" 
+              style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+              allowfullscreen
+              title="YouTube video player">
+            </iframe>
+          </div>
+        `;
+        
+        exec('insertHTML', youtubeEmbed);
+      } else {
+        alert('Please enter a valid YouTube video URL');
+      }
+    }
+  };
+
+  const insertExternalLink = () => {
+    const url = window.prompt("Enter external URL");
+    const linkText = window.prompt("Enter link text (optional)", "");
+    
+    if (url) {
+      // Validate URL
+      let validUrl = url;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        validUrl = `https://${url}`;
+      }
+      
+      const displayText = linkText || url;
+      
+      // Create simple hyperlink
+      const externalLink = `<a href="${validUrl}" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline;">${displayText}</a>`;
+      
+      exec('insertHTML', externalLink);
     }
   };
 
@@ -73,6 +133,26 @@ const RichTextEditor = ({ value, onChange, placeholder = "Write your content..."
           }}
         >
           Image
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={insertYouTubeVideo}
+          className="text-red-600 hover:text-red-700"
+        >
+          <Youtube className="h-4 w-4 mr-1" />
+          Video
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={insertExternalLink}
+          className="text-blue-600 hover:text-blue-700"
+        >
+          <ExternalLink className="h-4 w-4 mr-1" />
+          Link
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={() => exec("removeFormat")}>Clear</Button>
       </div>
