@@ -34,6 +34,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon, Clock } from "lucide-react";
+import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import SeedDatabase from "../components/SeedDatabase";
 import ImageUpload from "../components/ImageUpload";
@@ -55,6 +59,7 @@ interface BlogPost {
   image: string;
   createdAt: any;
   updatedAt: any;
+  scheduledAt?: any;
 }
 
 const Admin = () => {
@@ -65,6 +70,8 @@ const Admin = () => {
   const { data: categoryDocs } = useCollection('categories', [orderBy('name', 'asc')]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedTime, setSelectedTime] = useState("");
   const { toast } = useToast();
   const { text } = useLogo();
 
@@ -86,18 +93,37 @@ const Admin = () => {
     excerpt: "",
     image: "",
     status: "Draft",
+    scheduledAt: "" as string | Date,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prepare post data
+    const postData = {
+      ...formData,
+      author: user?.email || 'Admin',
+      updatedAt: new Date()
+    };
+
+    // Handle scheduled posts
+    if (formData.status === "Scheduled" && selectedDate && selectedTime) {
+      const scheduledDateTime = new Date(selectedDate);
+      const [hours, minutes] = selectedTime.split(':');
+      scheduledDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      postData.scheduledAt = scheduledDateTime;
+    } else if (formData.status === "Scheduled") {
+      toast({
+        title: "Error",
+        description: "Please select both date and time for scheduled posts",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (editingPost) {
       // Update existing post
-      const result = await updateDocument('posts', editingPost.id, {
-        ...formData,
-        author: user?.email || 'Admin',
-        updatedAt: new Date()
-      });
+      const result = await updateDocument('posts', editingPost.id, postData);
       
       if (result.success) {
         toast({
@@ -115,10 +141,8 @@ const Admin = () => {
     } else {
       // Create new post
       const result = await addDocument('posts', {
-        ...formData,
-        author: user?.email || 'Admin',
+        ...postData,
         createdAt: new Date(),
-        updatedAt: new Date()
       });
       
       if (result.success) {
@@ -138,6 +162,8 @@ const Admin = () => {
     
     setIsDialogOpen(false);
     setEditingPost(null);
+    setSelectedDate(undefined);
+    setSelectedTime("");
     setFormData({
       title: "",
       category: "",
@@ -145,6 +171,7 @@ const Admin = () => {
       excerpt: "",
       image: "",
       status: "Draft",
+      scheduledAt: "",
     });
   };
 
@@ -157,7 +184,19 @@ const Admin = () => {
       excerpt: post.excerpt || "",
       image: post.image || "",
       status: post.status,
+      scheduledAt: post.scheduledAt ? post.scheduledAt.toDate().toISOString().slice(0, 16) : "",
     });
+    
+    // Set date and time for scheduled posts
+    if (post.scheduledAt) {
+      const scheduledDate = post.scheduledAt.toDate();
+      setSelectedDate(scheduledDate);
+      setSelectedTime(scheduledDate.toTimeString().slice(0, 5));
+    } else {
+      setSelectedDate(undefined);
+      setSelectedTime("");
+    }
+    
     setIsDialogOpen(true);
   };
 
@@ -318,9 +357,54 @@ const Admin = () => {
                     <SelectContent>
                       <SelectItem value="Draft">Draft</SelectItem>
                       <SelectItem value="Published">Published</SelectItem>
+                      <SelectItem value="Scheduled">Scheduled</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Schedule Date and Time - Only show when Scheduled is selected */}
+                {formData.status === "Scheduled" && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Schedule Date</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={selectedDate}
+                            onSelect={setSelectedDate}
+                            disabled={(date) => date < new Date()}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="time">Schedule Time</Label>
+                      <div className="relative">
+                        <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                        <Input
+                          id="time"
+                          type="time"
+                          value={selectedTime}
+                          onChange={(e) => setSelectedTime(e.target.value)}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex gap-4">
                   <Button type="submit" className="flex-1">
@@ -332,6 +416,8 @@ const Admin = () => {
                     onClick={() => {
                       setIsDialogOpen(false);
                       setEditingPost(null);
+                      setSelectedDate(undefined);
+                      setSelectedTime("");
                       setFormData({
                         title: "",
                         category: "",
@@ -339,6 +425,7 @@ const Admin = () => {
                         excerpt: "",
                         image: "",
                         status: "Draft",
+                        scheduledAt: "",
                       });
                     }}
                   >
@@ -373,6 +460,12 @@ const Admin = () => {
             <div className="text-sm text-muted-foreground mb-1">Drafts</div>
             <div className="text-3xl font-bold text-accent">
               {posts?.filter(p => p.status === "Draft").length || 0}
+            </div>
+          </Card>
+          <Card className="p-6">
+            <div className="text-sm text-muted-foreground mb-1">Scheduled</div>
+            <div className="text-3xl font-bold text-orange-500">
+              {posts?.filter(p => p.status === "Scheduled").length || 0}
             </div>
           </Card>
           <Card className="p-6">
@@ -414,11 +507,25 @@ const Admin = () => {
                       <Badge variant="secondary">{post.category}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={post.status === "Published" ? "default" : "outline"}>
+                      <Badge 
+                        variant={
+                          post.status === "Published" ? "default" : 
+                          post.status === "Scheduled" ? "secondary" : 
+                          "outline"
+                        }
+                        className={
+                          post.status === "Scheduled" ? "bg-orange-100 text-orange-800 border-orange-200" : ""
+                        }
+                      >
                         {post.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>{formatDate(post.createdAt)}</TableCell>
+                    <TableCell>
+                      {post.status === "Scheduled" && post.scheduledAt ? 
+                        `Scheduled: ${formatDate(post.scheduledAt)}` : 
+                        formatDate(post.createdAt)
+                      }
+                    </TableCell>
                     <TableCell>{post.author}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

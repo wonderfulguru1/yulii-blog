@@ -2,6 +2,12 @@ import { collection, addDoc, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { auth } from '../lib/firebase';
 
+// Extract unique categories from blog posts
+const getUniqueCategories = (posts: any[]) => {
+  const categories = [...new Set(posts.map(post => post.category))];
+  return categories.map(name => ({ name }));
+};
+
 const initialBlogPosts = [
   {
     title: "How to Spot Bank Fraud and Protect Your Money",
@@ -109,6 +115,16 @@ export const seedDatabase = async () => {
       return { success: true, message: 'Database already seeded' };
     }
     
+    // Seed categories first
+    const categories = getUniqueCategories(initialBlogPosts);
+    const addedCategories = [];
+    for (const category of categories) {
+      const docRef = await addDoc(collection(db, 'categories'), category);
+      addedCategories.push(docRef.id);
+      console.log(`Added category: ${category.name} with ID: ${docRef.id}`);
+    }
+    
+    // Seed blog posts
     const addedPosts = [];
     for (const post of initialBlogPosts) {
       const docRef = await addDoc(collection(db, 'posts'), {
@@ -121,11 +137,12 @@ export const seedDatabase = async () => {
       console.log(`Added post: ${post.title} with ID: ${docRef.id}`);
     }
     
-    console.log(`Database seeded successfully! Added ${addedPosts.length} posts.`);
+    console.log(`Database seeded successfully! Added ${addedCategories.length} categories and ${addedPosts.length} posts.`);
     return { 
       success: true, 
-      message: `Successfully added ${addedPosts.length} blog posts`,
-      addedCount: addedPosts.length
+      message: `Successfully added ${addedCategories.length} categories and ${addedPosts.length} blog posts`,
+      addedCount: addedPosts.length,
+      categoriesCount: addedCategories.length
     };
   } catch (error: any) {
     console.error('Error seeding database:', error);

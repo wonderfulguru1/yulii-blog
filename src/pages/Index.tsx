@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BookOpen, Edit3, LogIn } from "lucide-react";
+import { ArrowRight, BookOpen, Edit3, LogIn, Tag } from "lucide-react";
 import { useAuthContext } from "../contexts/AuthContext";
 import { useLogo } from "../contexts/LogoContext";
+import { useCollection } from "../hooks/useFirestore";
 import ImageUploadDemo from "../components/ImageUploadDemo";
 import ImageLogo from "../components/ImageLogo";
 import LogoUploader from "../components/LogoUploader";
@@ -10,6 +11,9 @@ import LogoUploader from "../components/LogoUploader";
 const Index = () => {
   const { user } = useAuthContext();
   const { logoUrl, text } = useLogo();
+  
+  // Fetch categories from database
+  const { data: categories, loading: categoriesLoading } = useCollection('categories', []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary to-background">
@@ -80,12 +84,37 @@ const Index = () => {
             
             <div className="bg-card p-8 rounded-2xl border border-border shadow-sm hover:shadow-lg transition-all">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <ArrowRight className="h-6 w-6 text-primary" />
+                <Tag className="h-6 w-6 text-primary" />
               </div>
               <h3 className="text-xl font-bold mb-2">Categories</h3>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground mb-4">
                 Organized content across multiple topics
               </p>
+              {categoriesLoading ? (
+                <div className="flex flex-wrap gap-2">
+                  <div className="h-6 bg-muted animate-pulse rounded w-16"></div>
+                  <div className="h-6 bg-muted animate-pulse rounded w-20"></div>
+                  <div className="h-6 bg-muted animate-pulse rounded w-14"></div>
+                </div>
+              ) : categories && categories.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {categories.slice(0, 3).map((category: any) => (
+                    <span
+                      key={category.id}
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary"
+                    >
+                      {category.name}
+                    </span>
+                  ))}
+                  {categories.length > 3 && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                      +{categories.length - 3} more
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No categories available yet</p>
+              )}
             </div>
           </div>
 

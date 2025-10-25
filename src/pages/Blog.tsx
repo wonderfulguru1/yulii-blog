@@ -23,9 +23,8 @@ interface BlogPost {
   status: string;
   createdAt: any;
   updatedAt: any;
+  scheduledAt?: any;
 }
-
-const categories = ["All", "Business Tips", "News", "Product Updates", "Business Life", "Tech & Processes", "Impact Stories"];
 
 const Blog = () => {
   const [currentFeatured, setCurrentFeatured] = useState(0);
@@ -33,17 +32,36 @@ const Blog = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const { text } = useLogo();
 
-  // Get all published blog posts from Firestore
+  // Get all published and scheduled blog posts from Firestore
   const { data: allPosts, loading, error } = useCollection('posts', [
-    where('status', '==', 'Published'),
+    where('status', 'in', ['Published', 'Scheduled']),
     orderBy('createdAt', 'desc')
   ]);
 
-  // Filter posts for featured (first 2 published posts)
-  const featuredPosts = allPosts?.slice(0, 2) || [];
+  // Get categories from database
+  const { data: categories, loading: categoriesLoading } = useCollection('categories', []);
   
-  // All blog posts (published only)
-  const blogPosts = allPosts || [];
+  // Create categories array with "All" at the beginning
+  const allCategories = ["All", ...(categories?.map((cat: any) => cat.name) || [])];
+
+  // Function to check if a scheduled post should be published
+  const isScheduledPostReady = (post: BlogPost) => {
+    if (post.status !== 'Scheduled' || !post.scheduledAt) return false;
+    const now = new Date();
+    const scheduledTime = post.scheduledAt.toDate ? post.scheduledAt.toDate() : new Date(post.scheduledAt);
+    return scheduledTime <= now;
+  };
+
+  // Filter posts to only show published posts and scheduled posts that are ready
+  const visiblePosts = allPosts?.filter((post: BlogPost) => 
+    post.status === 'Published' || isScheduledPostReady(post)
+  ) || [];
+
+  // Filter posts for featured (first 2 visible posts)
+  const featuredPosts = visiblePosts.slice(0, 2);
+  
+  // All blog posts (published and ready scheduled posts)
+  const blogPosts = visiblePosts;
 
   const nextFeatured = () => {
     setCurrentFeatured((prev) => (prev + 1) % featuredPosts.length);
@@ -191,17 +209,27 @@ const Blog = () => {
                   />
                 </div>
                 <div className="flex gap-2 overflow-x-auto">
-                  {categories.map((category) => (
-                    <Button
-                      key={category}
-                      variant={selectedCategory === category ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedCategory(category)}
-                      className="whitespace-nowrap"
-                    >
-                      {category}
-                    </Button>
-                  ))}
+                  {categoriesLoading ? (
+                    // Loading skeleton for categories
+                    Array.from({ length: 4 }).map((_, index) => (
+                      <div
+                        key={index}
+                        className="h-8 bg-muted animate-pulse rounded w-20"
+                      />
+                    ))
+                  ) : (
+                    allCategories.map((category) => (
+                      <Button
+                        key={category}
+                        variant={selectedCategory === category ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedCategory(category)}
+                        className="whitespace-nowrap"
+                      >
+                        {category}
+                      </Button>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
