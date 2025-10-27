@@ -44,7 +44,7 @@ const BlogPost = () => {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <ImageLogo size="sm" showText={false} />
-            <span className="font-bold text-xl">{text} <span className="text-primary">BLOG</span></span>
+            <span className="font-bold text-xl"><span className="text-primary">BLOG</span></span>
           </Link>
           <Link to="/blog">
             <Button variant="outline" size="sm">

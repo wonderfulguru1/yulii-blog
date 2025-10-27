@@ -108,7 +108,7 @@ const Blog = () => {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <ImageLogo size="sm" showText={false} />
-            <span className="font-bold text-xl">{text} <span className="text-primary">BLOG</span></span>
+            <span className="font-bold text-xl"><span className="text-primary">BLOG</span></span>
           </Link>
           <div className="hidden md:flex items-center gap-6">
           
@@ -123,7 +123,7 @@ const Blog = () => {
       <section className="py-16 px-4">
         <div className="container mx-auto text-center max-w-4xl">
           <h1 className="text-5xl md:text-6xl font-bold text-primary mb-4">
-            {text} Blog
+            Blog
           </h1>
           <p className="text-lg text-muted-foreground">
           For smarter parenting, living, productive habits, and practical tips that make everyday life easier.</p>

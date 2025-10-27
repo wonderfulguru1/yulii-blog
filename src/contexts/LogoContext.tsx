@@ -34,36 +34,29 @@ export const LogoProvider = ({ children }: LogoProviderProps) => {
       setLogoUrl(savedLogoUrl);
     } else {
       // Try to use default logo from public folder
-      const defaultLogoPath = '/yulii-logo.png';
-      // Check if the image exists by trying to load it
-      const img = new Image();
-      img.onload = () => {
-        setLogoUrl(defaultLogoPath);
+      const defaultLogos = [
+        '/image/yulilogo-53f9df41.svg',
+        '/yulii-logo.png',
+        '/logo.png',
+        '/yulii-logo.svg',
+        '/logo.svg'
+      ];
+      
+      let index = 0;
+      const tryNextLogo = () => {
+        if (index < defaultLogos.length) {
+          const img = new Image();
+          img.onload = () => {
+            setLogoUrl(defaultLogos[index]);
+          };
+          img.onerror = () => {
+            index++;
+            tryNextLogo();
+          };
+          img.src = defaultLogos[index];
+        }
       };
-      img.onerror = () => {
-        // If default logo doesn't exist, try other common names
-        const commonNames = [
-          'yulii-logo.svg', 'logo.svg', 'yulii.svg', 'brand.svg',
-          'yulii-logo.png', 'logo.png', 'yulii.png', 'brand.png', 
-          'logo.jpg', 'yulii.jpg'
-        ];
-        let index = 0;
-        const tryNextLogo = () => {
-          if (index < commonNames.length) {
-            const testImg = new Image();
-            testImg.onload = () => {
-              setLogoUrl(`/${commonNames[index]}`);
-            };
-            testImg.onerror = () => {
-              index++;
-              tryNextLogo();
-            };
-            testImg.src = `/${commonNames[index]}`;
-          }
-        };
-        tryNextLogo();
-      };
-      img.src = defaultLogoPath;
+      tryNextLogo();
     }
     
     if (savedText) {
