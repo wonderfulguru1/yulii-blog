@@ -156,7 +156,7 @@ const ImageLogo = ({
       <div className={cn("flex items-center gap-2", className)}>
         {logoUrl && !logoError ? (
           <div className={cn(
-            "rounded-lg flex items-center justify-center overflow-hidden bg-muted",
+            "flex items-center justify-center overflow-hidden",
             sizeClasses[size]
           )}>
             <img
@@ -173,7 +173,7 @@ const ImageLogo = ({
         ) : (
           // Fallback when no logo or error loading
           <div className={cn(
-            "rounded-lg flex items-center justify-center overflow-hidden bg-muted",
+            "flex items-center justify-center overflow-hidden",
             sizeClasses[size]
           )}>
             <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -319,7 +319,7 @@ const ImageLogo = ({
               ) : (
                 // For non-SVG images, use container
                 <div className={cn(
-                  "rounded-lg flex items-center justify-center overflow-hidden bg-muted border",
+                  "flex items-center justify-center overflow-hidden border",
                   sizeClasses[size]
                 )}>
                   <img
