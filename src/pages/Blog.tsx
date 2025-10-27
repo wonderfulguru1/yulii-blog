@@ -126,8 +126,7 @@ const Blog = () => {
             {text} Blog
           </h1>
           <p className="text-lg text-muted-foreground">
-            Get behind the scenes on our process, exciting news, and the people making dreams come true for millions of businesses.
-          </p>
+          For smarter parenting, living, productive habits, and practical tips that make everyday life easier.</p>
         </div>
       </section>
 
