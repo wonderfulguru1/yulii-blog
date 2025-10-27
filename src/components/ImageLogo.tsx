@@ -31,6 +31,7 @@ const ImageLogo = ({
   const [urlInput, setUrlInput] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [logoError, setLogoError] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { uploadFile, loading, progress, error } = useStorage();
   const { toast } = useToast();
@@ -106,6 +107,7 @@ const ImageLogo = ({
       onLogoChange?.(urlInput.trim());
       setUrlInput('');
       setIsEditing(false);
+      setLogoError(false);
       toast({
         title: "Logo URL set",
         description: "Logo URL has been set successfully",
@@ -142,6 +144,7 @@ const ImageLogo = ({
   const clearLogo = () => {
     setLogoUrl('');
     onLogoChange?.('');
+    setLogoError(false);
   };
 
   // Check if the logo is an SVG
@@ -151,40 +154,24 @@ const ImageLogo = ({
   if (!isEditing || !editable) {
     return (
       <div className={cn("flex items-center gap-2", className)}>
-        {logoUrl ? (
-          isSVG ? (
-            // Render SVG directly without container
+        {logoUrl && !logoError ? (
+          <div className={cn(
+            "rounded-lg flex items-center justify-center overflow-hidden bg-muted",
+            sizeClasses[size]
+          )}>
             <img
               src={logoUrl}
               alt={`${displayText} Logo`}
-              className={cn("object-contain", sizeClasses[size])}
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.nextElementSibling?.classList.remove('hidden');
-              }}
+              className={cn(
+                "object-contain",
+                sizeClasses[size]
+              )}
+              onError={() => setLogoError(true)}
+              onLoad={() => setLogoError(false)}
             />
-          ) : (
-            // For non-SVG images, use container
-            <div className={cn(
-              "rounded-lg flex items-center justify-center overflow-hidden bg-muted",
-              sizeClasses[size]
-            )}>
-              <img
-                src={logoUrl}
-                alt={`${displayText} Logo`}
-                className="w-full h-full object-contain"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                }}
-              />
-              <div className="hidden w-full h-full flex items-center justify-center text-muted-foreground">
-                <ImageIcon className="h-1/2 w-1/2" />
-              </div>
-            </div>
-          )
+          </div>
         ) : (
-          // Fallback when no logo
+          // Fallback when no logo or error loading
           <div className={cn(
             "rounded-lg flex items-center justify-center overflow-hidden bg-muted",
             sizeClasses[size]
@@ -192,13 +179,6 @@ const ImageLogo = ({
             <div className="w-full h-full flex items-center justify-center text-muted-foreground">
               <ImageIcon className="h-1/2 w-1/2" />
             </div>
-          </div>
-        )}
-        
-        {/* Error fallback for SVG */}
-        {logoUrl && isSVG && (
-          <div className="hidden w-full h-full flex items-center justify-center text-muted-foreground">
-            <ImageIcon className="h-1/2 w-1/2" />
           </div>
         )}
         
